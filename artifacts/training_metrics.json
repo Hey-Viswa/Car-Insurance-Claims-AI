@@ -1,0 +1,205 @@
+{
+  "timestamp": "2026-09-07 21:09:21",
+  "device": "cpu",
+  "dataset_stats": {
+    "train_samples": 1383,
+    "val_samples": 248,
+    "classes": [
+      "Minor Damage",
+      "Moderate Damage",
+      "Severe Damage"
+    ]
+  },
+  "phase1_cnn": {
+    "model_architecture": "MobileNetV2 (3.4M Parameters)",
+    "best_val_accuracy": 64.52,
+    "epoch_history": [
+      {
+        "epoch": 1,
+        "train_loss": 0.9593,
+        "train_acc": 50.61,
+        "val_loss": 0.771,
+        "val_acc": 64.52
+      },
+      {
+        "epoch": 2,
+        "train_loss": 0.8107,
+        "train_acc": 61.39,
+        "val_loss": 0.7675,
+        "val_acc": 63.71
+      },
+      {
+        "epoch": 3,
+        "train_loss": 0.8021,
+        "train_acc": 63.27,
+        "val_loss": 0.7535,
+        "val_acc": 62.9
+      },
+      {
+        "epoch": 4,
+        "train_loss": 0.7475,
+        "train_acc": 66.88,
+        "val_loss": 0.7824,
+        "val_acc": 61.29
+      }
+    ],
+    "confusion_matrix": [
+      [
+        70,
+        12,
+        0
+      ],
+      [
+        27,
+        40,
+        8
+      ],
+      [
+        4,
+        45,
+        42
+      ]
+    ],
+    "classification_report": {
+      "Minor": {
+        "precision": 0.693069306930693,
+        "recall": 0.8536585365853658,
+        "f1-score": 0.7650273224043715,
+        "support": 82.0
+      },
+      "Moderate": {
+        "precision": 0.41237113402061853,
+        "recall": 0.5333333333333333,
+        "f1-score": 0.46511627906976744,
+        "support": 75.0
+      },
+      "Severe": {
+        "precision": 0.84,
+        "recall": 0.46153846153846156,
+        "f1-score": 0.5957446808510638,
+        "support": 91.0
+      },
+      "accuracy": 0.6129032258064516,
+      "macro avg": {
+        "precision": 0.6484801469837705,
+        "recall": 0.6161767771523868,
+        "f1-score": 0.6086294274417342,
+        "support": 248.0
+      },
+      "weighted avg": {
+        "precision": 0.6620948315317066,
+        "recall": 0.6129032258064516,
+        "f1-score": 0.6122126101807976,
+        "support": 248.0
+      }
+    }
+  },
+  "phase2_svm": {
+    "algorithm": "Support Vector Machine (RBF Kernel)",
+    "features": "HOG (Histogram of Oriented Gradients, 8,100 dims)",
+    "fit_accuracy": 98.0,
+    "confusion_matrix": [
+      [
+        398,
+        2
+      ],
+      [
+        10,
+        190
+      ]
+    ],
+    "classification_report": {
+      "Intact Frame": {
+        "precision": 0.9754901960784313,
+        "recall": 0.995,
+        "f1-score": 0.9851485148514851,
+        "support": 400.0
+      },
+      "Structural Deformation": {
+        "precision": 0.9895833333333334,
+        "recall": 0.95,
+        "f1-score": 0.9693877551020408,
+        "support": 200.0
+      },
+      "accuracy": 0.98,
+      "macro avg": {
+        "precision": 0.9825367647058824,
+        "recall": 0.9724999999999999,
+        "f1-score": 0.9772681349767629,
+        "support": 600.0
+      },
+      "weighted avg": {
+        "precision": 0.9801879084967321,
+        "recall": 0.98,
+        "f1-score": 0.979894928268337,
+        "support": 600.0
+      }
+    }
+  },
+  "phase3_kmeans": {
+    "color_space": "HSV (Hue, Saturation, Value)",
+    "clusters_k": 3,
+    "average_damage_surface_pct": 23.54,
+    "median_damage_surface_pct": 24.77,
+    "max_damage_surface_pct": 38.81
+  },
+  "phase4_random_forest": {
+    "model": "Random Forest Ensemble (100 Trees, Depth 6)",
+    "accuracy": 100.0,
+    "feature_importances": {
+      "CNN Damage Class": 0.3417,
+      "SVM Frame Deformation": 0.2714,
+      "KMeans Damage Area %": 0.3869
+    },
+    "confusion_matrix": [
+      [
+        171,
+        0,
+        0
+      ],
+      [
+        0,
+        240,
+        0
+      ],
+      [
+        0,
+        0,
+        337
+      ]
+    ],
+    "classification_report": {
+      "Low Tier": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1-score": 1.0,
+        "support": 171.0
+      },
+      "Medium Tier": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1-score": 1.0,
+        "support": 240.0
+      },
+      "High Tier": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1-score": 1.0,
+        "support": 337.0
+      },
+      "accuracy": 1.0,
+      "macro avg": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1-score": 1.0,
+        "support": 748.0
+      },
+      "weighted avg": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1-score": 1.0,
+        "support": 748.0
+      }
+    }
+  }
+}

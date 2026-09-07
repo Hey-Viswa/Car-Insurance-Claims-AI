@@ -13,6 +13,42 @@ from reportlab.platypus import (
 )
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
+from reportlab.pdfgen import canvas
+
+
+class NumberedCanvas(canvas.Canvas):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._saved_page_states = []
+
+    def showPage(self):
+        self._saved_page_states.append(dict(self.__dict__))
+        self._startPage()
+
+    def save(self):
+        num_pages = len(self._saved_page_states)
+        for state in self._saved_page_states:
+            self.__dict__.update(state)
+            self.draw_decorations(num_pages)
+            super().showPage()
+        super().save()
+
+    def draw_decorations(self, page_count):
+        self.saveState()
+        self.setFont("Helvetica", 8)
+        self.setFillColor(colors.HexColor("#71717a"))
+        if self._pageNumber > 1:
+            self.drawString(36, 756, "VANGUARD CLAIMOS • TEAM ACADEMIC DEFENSE DOSSIER & VIVA MASTER GUIDE")
+            self.drawRightString(576, 756, "BE COMP 2025–2026 • PILLAI HOC (AUTONOMOUS)")
+            self.setStrokeColor(colors.HexColor("#e4e4e7"))
+            self.setLineWidth(0.5)
+            self.line(36, 750, 576, 750)
+        self.setStrokeColor(colors.HexColor("#e4e4e7"))
+        self.setLineWidth(0.5)
+        self.line(36, 38, 576, 38)
+        self.drawString(36, 26, "VANGUARD CLAIMOS — OFFICIAL TEAM EXAMINATION DOSSIER — CONFIDENTIAL")
+        self.drawRightString(576, 26, f"Page {self._pageNumber} of {page_count}")
+        self.restoreState()
 
 
 def build_academic_defense_pdf(metrics_data: dict = None) -> bytes:
@@ -22,8 +58,8 @@ def build_academic_defense_pdf(metrics_data: dict = None) -> bytes:
         pagesize=letter,
         rightMargin=36,
         leftMargin=36,
-        topMargin=36,
-        bottomMargin=36
+        topMargin=46,
+        bottomMargin=46
     )
 
     styles = getSampleStyleSheet()
@@ -130,25 +166,27 @@ def build_academic_defense_pdf(metrics_data: dict = None) -> bytes:
     story.append(Spacer(1, 8))
     story.append(HRFlowable(width="100%", thickness=1.5, color=c_primary, spaceAfter=10))
 
-    # Candidate Meta Table
+    # Team Project Metadata Table
     cand_meta = [
-        [Paragraph("Candidate Name:", bold_body), Paragraph("Viswa Sharma", body_text),
+        [Paragraph("Project Title:", bold_body), Paragraph("Vanguard ClaimOS (Autonomous Motor Claim Adjudication)", body_text),
          Paragraph("Degree / Class:", bold_body), Paragraph("B.E. Computer Engineering (Final Year)", body_text)],
-        [Paragraph("Institution:", bold_body), Paragraph("Pillai HOC College of Engg & Tech", body_text),
-         Paragraph("Specialization:", bold_body), Paragraph("Deep Learning & Intelligent Systems", body_text)],
-        [Paragraph("Core Stack:", bold_body), Paragraph("PyTorch • Scikit-Learn • OpenCV • FastAPI • Next.js 14", body_text),
-         Paragraph("Dataset Source:", bold_body), Paragraph("Stanford/Kaggle Car Damage Benchmark (1,631 images)", body_text)]
+        [Paragraph("Project Team:", bold_body), Paragraph("Viswa Sharma &amp; Engineering Project Team (4 Members)", body_text),
+         Paragraph("Institution:", bold_body), Paragraph("Pillai HOC College of Engg &amp; Tech (Autonomous)", body_text)],
+        [Paragraph("Core Architecture:", bold_body), Paragraph("MobileNetV2 CNN • SVM+HOG • HSV K-Means • Random Forest", body_text),
+         Paragraph("Cloud &amp; Database:", bold_body), Paragraph("Neon Serverless PostgreSQL • Next.js 14 • FastAPI", body_text)],
+        [Paragraph("Live Repository:", bold_body), Paragraph("https://github.com/Hey-Viswa/Car-Insurance-Claims-AI", body_text),
+         Paragraph("Benchmark Dataset:", bold_body), Paragraph("Stanford/Kaggle Car Damage Benchmark (1,631 images)", body_text)]
     ]
     t_meta = Table(cand_meta, colWidths=[90, 180, 90, 180])
     t_meta.setStyle(TableStyle([
         ('BACKGROUND', (0, 0), (-1, -1), c_bg_subtle),
         ('BOX', (0, 0), (-1, -1), 1, c_border),
         ('INNERGRID', (0, 0), (-1, -1), 0.5, c_border),
-        ('TOPPADDING', (0, 0), (-1, -1), 4),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
+        ('TOPPADDING', (0, 0), (-1, -1), 3),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 3),
     ]))
     story.append(t_meta)
-    story.append(Spacer(1, 10))
+    story.append(Spacer(1, 8))
 
     # Section 1: Executive Overview
     story.append(Paragraph("1. Executive Engineering Overview & Pipeline Partition", section_h1))
@@ -222,10 +260,53 @@ def build_academic_defense_pdf(metrics_data: dict = None) -> bytes:
     ]))
     story.append(t_telem)
 
-    # ================= PAGE 2: CONFUSION MATRICES & BENCHMARKS =================
+    # ================= PAGE 2: INDIVIDUAL MEMBER ORAL DEFENSE SCRIPTS =================
+    story.append(PageBreak())
+    story.append(Paragraph("3. Individual Team Member Technical Deep Dives & Oral Defense Scripts", section_h1))
+    story.append(Paragraph(
+        "Each team member must master their specific module and deliver this oral defense when questioned by the external examiner:",
+        body_text
+    ))
+    story.append(Spacer(1, 4))
+
+    m_scripts = [
+        ("MEMBER 1 DEFENSE: Phase 1 — MobileNetV2 Transfer Learning CNN",
+         "<b>What to say to Examiner:</b> <i>\"I trained the Deep Convolutional Neural Network for 3-class damage severity appraisal. Instead of using standard heavy backbones like VGG-16 (138M parameters) or ResNet-50 (25.6M parameters), I selected MobileNetV2 because it utilizes depthwise separable convolutions and inverted residual bottlenecks. This reduces computational complexity by a factor of 8.5x, allowing our model to run in just 41.8 milliseconds on standard edge CPUs. I initialized weights from ImageNet, froze early feature extraction layers, and trained a custom 2-layer classification head with Dropout (0.2) to prevent overfitting on our 1,631 vehicle images, achieving 64.5% validation accuracy.\"</i><br/>"
+         "<b>Core Formula:</b> Depthwise separable convolution compute cost ratio: (D_k * D_k * M + M * N) / (D_k * D_k * M * N) = 1/N + 1/D_k^2 ≈ 1/8 of standard convolution."),
+
+        ("MEMBER 2 DEFENSE: Phase 2 — Support Vector Machine (SVM) + HOG Gradient Features",
+         "<b>What to say to Examiner:</b> <i>\"I developed the structural integrity verification subsystem. Deep CNNs are prone to texture bias and can confuse harmless paint scuffs with critical structural frame distortion. To solve this, I implemented Histogram of Oriented Gradients (HOG) feature extraction on 128x128 normalized images using 16x16 pixel cells and 9 orientation bins, generating 8,100 gradient descriptors per image. These descriptors capture the directional geometry of vehicle pillars and bumper chassis lines. An RBF-kernel Support Vector Machine then classifies whether the frame is intact (0) or structurally deformed (1) with 98.00% fit accuracy, acting as an immutable safety override before payouts are authorized.\"</i><br/>"
+         "<b>Core Formula:</b> Gradient magnitude M(x, y) = sqrt(G_x^2 + G_y^2) and orientation theta(x, y) = arctan(G_y / G_x) across 9 histogram bins."),
+
+        ("MEMBER 3 DEFENSE: Phase 3 — Unsupervised K-Means Clustering in HSV Color Space",
+         "<b>What to say to Examiner:</b> <i>\"I engineered the quantitative damage area surface estimation engine. Conventional RGB segmentation fails in outdoor automotive claims due to ambient sunlight, shadows, and body reflections. I converted images to HSV (Hue-Saturation-Value) space to decouple luminance (V) from true chromaticity (H and S). An unsupervised K-Means clustering algorithm (k=3) partitions pixels into body paint, asphalt background, and exposed primer/fracture damage. By calculating the ratio of damaged cluster pixels to total foreground body pixels, we obtain an objective damage area percentage (14.8% to 38.2%) that feeds directly into replacement material cost appraisal.\"</i><br/>"
+         "<b>Core Formula:</b> K-Means minimization objective: J = sum_{i=1}^k sum_{x in S_i} ||x - mu_i||^2 computed using 3D Euclidean distance in HSV color space."),
+
+        ("MEMBER 4 DEFENSE: Phase 4 — Random Forest Fusion, Cloud DB & Full-Stack Deployment",
+         "<b>What to say to Examiner:</b> <i>\"I architected the decision fusion engine, database architecture, and full-stack deployment. Individual ML models cannot make legal underwriting determinations in isolation. I built a Random Forest ensemble (100 estimators, max depth 6) combining the feature vector [CNN Class, Deformation Flag, Damage Area %] to triage claims into Low, Medium, and High Repair Cost Tiers with 100% accuracy. I deployed the backend microservice using FastAPI on port 8000 with sub-70ms response times, connected serverless Neon PostgreSQL with automatic SQLite fallback, and built the Next.js 14 frontend featuring dual-layer reload state persistence so user claims and photos are never lost upon page refresh.\"</i><br/>"
+         "<b>Core Formula:</b> Gini Impurity for tree split optimization: I_G(p) = 1 - sum_{i=1}^J p_i^2, yielding 38.7% importance to area, 34.2% to CNN, 27.1% to SVM.")
+    ]
+
+    for title, text in m_scripts:
+        box = [
+            [Paragraph(f"<b>{title}</b>", section_h2)],
+            [Paragraph(text, body_text)]
+        ]
+        t = Table(box, colWidths=[540])
+        t.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor("#f1f5f9")),
+            ('BACKGROUND', (0, 1), (-1, 1), colors.white),
+            ('BOX', (0, 0), (-1, -1), 1, colors.HexColor("#cbd5e1")),
+            ('TOPPADDING', (0, 0), (-1, -1), 3),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 3),
+        ]))
+        story.append(t)
+        story.append(Spacer(1, 4))
+
+    # ================= PAGE 3: CONFUSION MATRICES & BENCHMARKS =================
     story.append(PageBreak())
 
-    story.append(Paragraph("3. Empirical Evaluation, Validation Matrices & Classification Reports", section_h1))
+    story.append(Paragraph("4. Empirical Evaluation, Validation Matrices & Classification Reports", section_h1))
     story.append(Paragraph(
         "Models were trained and evaluated on 1,631 vehicle incident photographs partitioned into 1,383 training samples and 248 held-out validation samples. "
         "Standard data augmentation (Random Horizontal Flip, Color Jitter, Affine rotation ±10°) prevented overfitting.",
@@ -295,7 +376,7 @@ def build_academic_defense_pdf(metrics_data: dict = None) -> bytes:
     # ================= PAGE 3: COMPREHENSIVE VIVA DEFENSE Q&A =================
     story.append(PageBreak())
 
-    story.append(Paragraph("4. Comprehensive Viva Defense Q&A & Technical Cheat Sheet", section_h1))
+    story.append(Paragraph("5. Comprehensive Viva Defense Q&A & Master Cheat Sheet", section_h1))
     story.append(Paragraph("Direct answers for external viva examiners, technical auditors, and department project reviews:", subtitle_style))
     story.append(Spacer(1, 8))
 
@@ -342,10 +423,10 @@ def build_academic_defense_pdf(metrics_data: dict = None) -> bytes:
         story.append(Paragraph(a, a_text))
         story.append(Spacer(1, 6))
 
-    # ================= PAGE 4: VIVA DEFENSE PART 2 & EVALUATION RUBRIC =================
+    # ================= PAGE 5: VIVA DEFENSE PART 2 & EVALUATION RUBRIC =================
     story.append(PageBreak())
 
-    story.append(Paragraph("4. Comprehensive Viva Defense Q&A (Continued)", section_h1))
+    story.append(Paragraph("5. Comprehensive Viva Defense Q&A (Continued)", section_h1))
     story.append(Spacer(1, 6))
 
     qa_list_2 = [
@@ -375,6 +456,14 @@ def build_academic_defense_pdf(metrics_data: dict = None) -> bytes:
             "• SVM Hyperplane: $\\min_{w, b, \\xi} \\frac{1}{2} \\|w\\|^2 + C \\sum_{i=1}^n \\xi_i \\quad \\text{s.t.} \\quad y_i(w^T \\phi(x_i) + b) \\ge 1 - \\xi_i$<br/>"
             "• K-Means Objective: $J = \\sum_{i=1}^k \\sum_{x \\in S_i} \\|x - \\mu_i\\|^2$<br/>"
             "• Gini Impurity: $I_G(p) = 1 - \\sum_{i=1}^J p_i^2$"
+        ),
+        (
+            "Q10. Why integrate Neon Serverless PostgreSQL and how does dual reload state persistence operate?",
+            "<b>Answer:</b> Claims auditing requires durable ACID transactions and multi-user concurrency. "
+            "Neon provides serverless PostgreSQL with auto-scaling and zero-idle compute overhead. "
+            "To prevent losing work on page refresh (F5), our frontend implements dual-layer persistence: "
+            "instant synchronous hydration from localStorage (&lt; 5ms) coupled with debounced cloud synchronization to Neon PostgreSQL, "
+            "backed by an on-premise SQLite fallback."
         )
     ]
 
@@ -384,7 +473,7 @@ def build_academic_defense_pdf(metrics_data: dict = None) -> bytes:
         story.append(Spacer(1, 6))
 
     story.append(Spacer(1, 10))
-    story.append(Paragraph("5. Project Examination & Viva Evaluation Sign-off Rubric", section_h1))
+    story.append(Paragraph("6. Project Examination & Viva Evaluation Sign-off Rubric", section_h1))
 
     rubric_data = [
         [Paragraph("Evaluation Parameter", table_head), Paragraph("Max Marks", table_head), Paragraph("Awarded Marks", table_head), Paragraph("Examiner Signature & Remarks", table_head)],
@@ -423,13 +512,23 @@ def build_academic_defense_pdf(metrics_data: dict = None) -> bytes:
     ]))
     story.append(t_sigs)
 
-    doc.build(story)
+    doc.build(story, canvasmaker=NumberedCanvas)
     return buffer.getvalue()
 
 
 if __name__ == "__main__":
     pdf_bytes = build_academic_defense_pdf()
-    out_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "artifacts", "Vanguard_ClaimOS_Academic_Defense_Dossier.pdf")
-    with open(out_path, "wb") as f:
+    artifacts_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "artifacts")
+    os.makedirs(artifacts_dir, exist_ok=True)
+    out_path_artifacts = os.path.join(artifacts_dir, "Vanguard_ClaimOS_Academic_Defense_Dossier.pdf")
+    with open(out_path_artifacts, "wb") as f:
         f.write(pdf_bytes)
-    print(f"Generated Academic Defense Dossier PDF at {out_path} ({len(pdf_bytes)} bytes)")
+
+    root_dir = os.path.dirname(os.path.dirname(__file__))
+    out_path_team = os.path.join(root_dir, "Vanguard_ClaimOS_Team_Defense_Dossier.pdf")
+    with open(out_path_team, "wb") as f:
+        f.write(pdf_bytes)
+
+    print(f"Generated Academic Defense Dossier PDF ({len(pdf_bytes)} bytes):")
+    print(f"1. {out_path_artifacts}")
+    print(f"2. {out_path_team}")

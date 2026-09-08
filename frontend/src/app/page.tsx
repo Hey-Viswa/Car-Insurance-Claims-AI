@@ -1062,47 +1062,105 @@ export default function Home() {
                       </div>
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                        {/* CNN Probabilities */}
+                        {/* CNN Probabilities - Line Graph */}
                         <div className="space-y-3">
                           <span className="text-xs text-zinc-400 font-mono">MobileNetV2 (Damage Severity)</span>
-                          <div className="space-y-2">
-                            {[
-                              { label: "Minor Damage", value: assessment.member_outputs.member_1_cnn.probabilities.minor, color: "bg-emerald-500" },
-                              { label: "Moderate Damage", value: assessment.member_outputs.member_1_cnn.probabilities.moderate, color: "bg-amber-500" },
-                              { label: "Severe Damage", value: assessment.member_outputs.member_1_cnn.probabilities.severe, color: "bg-rose-500" },
-                            ].map((item) => (
-                              <div key={item.label} className="w-full">
-                                <div className="flex justify-between text-[11px] mb-1">
-                                  <span className="text-zinc-300">{item.label}</span>
-                                  <span className="text-zinc-400 font-mono">{(item.value * 100).toFixed(1)}%</span>
-                                </div>
-                                <div className="w-full bg-zinc-950 rounded-full h-1.5 overflow-hidden">
-                                  <div className={`h-1.5 rounded-full ${item.color}`} style={{ width: `${(item.value * 100).toFixed(1)}%` }} />
-                                </div>
-                              </div>
-                            ))}
+                          <div className="relative w-full h-48 bg-zinc-950/80 rounded-xl p-4 border border-zinc-800/80 overflow-hidden">
+                            <svg viewBox="-5 -5 110 110" preserveAspectRatio="none" className="w-full h-full overflow-visible">
+                              {/* Grid lines */}
+                              <line x1="0" y1="10" x2="100" y2="10" stroke="#3f3f46" strokeDasharray="2 2" strokeWidth="0.5" />
+                              <line x1="0" y1="50" x2="100" y2="50" stroke="#3f3f46" strokeDasharray="2 2" strokeWidth="0.5" />
+                              <line x1="0" y1="90" x2="100" y2="90" stroke="#3f3f46" strokeWidth="0.5" />
+
+                              {(() => {
+                                const data = [
+                                  { label: "Minor", value: assessment.member_outputs.member_1_cnn.probabilities.minor },
+                                  { label: "Moderate", value: assessment.member_outputs.member_1_cnn.probabilities.moderate },
+                                  { label: "Severe", value: assessment.member_outputs.member_1_cnn.probabilities.severe }
+                                ];
+                                const pts = data.map((d, i) => {
+                                  const x = (i * 50); // 0, 50, 100
+                                  const y = 90 - (d.value * 0.8);
+                                  return `${x},${y}`;
+                                }).join(" ");
+                                const pathD = `M ${pts.split(' ').join(' L ')}`;
+                                const areaD = `${pathD} L 100,90 L 0,90 Z`;
+                                return (
+                                  <g>
+                                    <defs>
+                                      <linearGradient id="cnn-grad" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="0%" stopColor="#10b981" stopOpacity="0.4" />
+                                        <stop offset="100%" stopColor="#10b981" stopOpacity="0" />
+                                      </linearGradient>
+                                    </defs>
+                                    <path d={areaD} fill="url(#cnn-grad)" />
+                                    <path d={pathD} fill="none" stroke="#10b981" strokeWidth="1.5" vectorEffect="non-scaling-stroke" />
+                                    {data.map((d, i) => {
+                                      const x = (i * 50);
+                                      const y = 90 - (d.value * 0.8);
+                                      return (
+                                        <g key={i}>
+                                          <circle cx={x} cy={y} r="2" fill="#09090b" stroke="#10b981" strokeWidth="1.5" vectorEffect="non-scaling-stroke" />
+                                          <text x={x} y={y - 4} textAnchor="middle" fill="#e4e4e7" fontSize="6" fontWeight="600">{d.value.toFixed(1)}%</text>
+                                          <text x={x} y="102" textAnchor="middle" fill="#a1a1aa" fontSize="5">{d.label}</text>
+                                        </g>
+                                      );
+                                    })}
+                                  </g>
+                                );
+                              })()}
+                            </svg>
                           </div>
                         </div>
 
-                        {/* Random Forest Probabilities */}
+                        {/* Random Forest Probabilities - Line Graph */}
                         <div className="space-y-3">
                           <span className="text-xs text-zinc-400 font-mono">Random Forest (Repair Tier)</span>
-                          <div className="space-y-2">
-                            {[
-                              { label: "Low Tier", value: assessment.member_outputs.member_4_random_forest.tier_probabilities.low, color: "bg-emerald-500" },
-                              { label: "Medium Tier", value: assessment.member_outputs.member_4_random_forest.tier_probabilities.medium, color: "bg-amber-500" },
-                              { label: "High Tier", value: assessment.member_outputs.member_4_random_forest.tier_probabilities.high, color: "bg-rose-500" },
-                            ].map((item) => (
-                              <div key={item.label} className="w-full">
-                                <div className="flex justify-between text-[11px] mb-1">
-                                  <span className="text-zinc-300">{item.label}</span>
-                                  <span className="text-zinc-400 font-mono">{(item.value * 100).toFixed(1)}%</span>
-                                </div>
-                                <div className="w-full bg-zinc-950 rounded-full h-1.5 overflow-hidden">
-                                  <div className={`h-1.5 rounded-full ${item.color}`} style={{ width: `${(item.value * 100).toFixed(1)}%` }} />
-                                </div>
-                              </div>
-                            ))}
+                          <div className="relative w-full h-48 bg-zinc-950/80 rounded-xl p-4 border border-zinc-800/80 overflow-hidden">
+                            <svg viewBox="-5 -5 110 110" preserveAspectRatio="none" className="w-full h-full overflow-visible">
+                              {/* Grid lines */}
+                              <line x1="0" y1="10" x2="100" y2="10" stroke="#3f3f46" strokeDasharray="2 2" strokeWidth="0.5" />
+                              <line x1="0" y1="50" x2="100" y2="50" stroke="#3f3f46" strokeDasharray="2 2" strokeWidth="0.5" />
+                              <line x1="0" y1="90" x2="100" y2="90" stroke="#3f3f46" strokeWidth="0.5" />
+
+                              {(() => {
+                                const data = [
+                                  { label: "Low", value: assessment.member_outputs.member_4_random_forest.tier_probabilities.low },
+                                  { label: "Medium", value: assessment.member_outputs.member_4_random_forest.tier_probabilities.medium },
+                                  { label: "High", value: assessment.member_outputs.member_4_random_forest.tier_probabilities.high }
+                                ];
+                                const pts = data.map((d, i) => {
+                                  const x = (i * 50); // 0, 50, 100
+                                  const y = 90 - (d.value * 0.8);
+                                  return `${x},${y}`;
+                                }).join(" ");
+                                const pathD = `M ${pts.split(' ').join(' L ')}`;
+                                const areaD = `${pathD} L 100,90 L 0,90 Z`;
+                                return (
+                                  <g>
+                                    <defs>
+                                      <linearGradient id="rf-grad" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="0%" stopColor="#8b5cf6" stopOpacity="0.4" />
+                                        <stop offset="100%" stopColor="#8b5cf6" stopOpacity="0" />
+                                      </linearGradient>
+                                    </defs>
+                                    <path d={areaD} fill="url(#rf-grad)" />
+                                    <path d={pathD} fill="none" stroke="#8b5cf6" strokeWidth="1.5" vectorEffect="non-scaling-stroke" />
+                                    {data.map((d, i) => {
+                                      const x = (i * 50);
+                                      const y = 90 - (d.value * 0.8);
+                                      return (
+                                        <g key={i}>
+                                          <circle cx={x} cy={y} r="2" fill="#09090b" stroke="#8b5cf6" strokeWidth="1.5" vectorEffect="non-scaling-stroke" />
+                                          <text x={x} y={y - 4} textAnchor="middle" fill="#e4e4e7" fontSize="6" fontWeight="600">{d.value.toFixed(1)}%</text>
+                                          <text x={x} y="102" textAnchor="middle" fill="#a1a1aa" fontSize="5">{d.label}</text>
+                                        </g>
+                                      );
+                                    })}
+                                  </g>
+                                );
+                              })()}
+                            </svg>
                           </div>
                         </div>
                       </div>

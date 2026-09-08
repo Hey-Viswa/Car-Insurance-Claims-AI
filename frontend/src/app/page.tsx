@@ -18,6 +18,15 @@ import {
   FileText,
   Database
 } from "lucide-react";
+import {
+  Area,
+  AreaChart,
+  CartesianGrid,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer
+} from "recharts";
 
 interface MemberOutputs {
   member_1_cnn: {
@@ -567,18 +576,7 @@ export default function Home() {
               <span className="font-mono">{backendOnline ? "FastAPI: 8000" : "Offline"}</span>
             </div>
 
-            {/* Standalone Defense Dossier PDF Button */}
-            <a
-              href="http://127.0.0.1:8000/api/defense-pdf"
-              target="_blank"
-              rel="noopener noreferrer"
-              download="Vanguard_ClaimOS_Academic_Defense_Dossier.pdf"
-              className="inline-flex items-center gap-2 px-3.5 py-1.5 text-xs sm:text-sm font-medium rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-100 border border-zinc-800 hover:border-zinc-700 transition-colors shadow-sm"
-              title="Download standalone Academic Defense & Model Telemetry PDF"
-            >
-              <FileText className="w-4 h-4 text-zinc-400" />
-              <span>Defense Dossier (PDF)</span>
-            </a>
+
           </div>
         </div>
       </header>
@@ -1062,105 +1060,67 @@ export default function Home() {
                       </div>
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                        {/* CNN Probabilities - Line Graph */}
+                        {/* CNN Probabilities - Recharts */}
                         <div className="space-y-3">
                           <span className="text-xs text-zinc-400 font-mono">MobileNetV2 (Damage Severity)</span>
-                          <div className="relative w-full h-48 bg-zinc-950/80 rounded-xl p-4 border border-zinc-800/80 overflow-hidden">
-                            <svg viewBox="-5 -5 110 110" preserveAspectRatio="none" className="w-full h-full overflow-visible">
-                              {/* Grid lines */}
-                              <line x1="0" y1="10" x2="100" y2="10" stroke="#3f3f46" strokeDasharray="2 2" strokeWidth="0.5" />
-                              <line x1="0" y1="50" x2="100" y2="50" stroke="#3f3f46" strokeDasharray="2 2" strokeWidth="0.5" />
-                              <line x1="0" y1="90" x2="100" y2="90" stroke="#3f3f46" strokeWidth="0.5" />
-
-                              {(() => {
-                                const data = [
+                          <div className="relative w-full h-48 bg-zinc-950/80 rounded-xl p-4 border border-zinc-800/80">
+                            <ResponsiveContainer width="100%" height="100%">
+                              <AreaChart
+                                data={[
                                   { label: "Minor", value: assessment.member_outputs.member_1_cnn.probabilities.minor },
                                   { label: "Moderate", value: assessment.member_outputs.member_1_cnn.probabilities.moderate },
                                   { label: "Severe", value: assessment.member_outputs.member_1_cnn.probabilities.severe }
-                                ];
-                                const pts = data.map((d, i) => {
-                                  const x = (i * 50); // 0, 50, 100
-                                  const y = 90 - (d.value * 0.8);
-                                  return `${x},${y}`;
-                                }).join(" ");
-                                const pathD = `M ${pts.split(' ').join(' L ')}`;
-                                const areaD = `${pathD} L 100,90 L 0,90 Z`;
-                                return (
-                                  <g>
-                                    <defs>
-                                      <linearGradient id="cnn-grad" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="0%" stopColor="#10b981" stopOpacity="0.4" />
-                                        <stop offset="100%" stopColor="#10b981" stopOpacity="0" />
-                                      </linearGradient>
-                                    </defs>
-                                    <path d={areaD} fill="url(#cnn-grad)" />
-                                    <path d={pathD} fill="none" stroke="#10b981" strokeWidth="1.5" vectorEffect="non-scaling-stroke" />
-                                    {data.map((d, i) => {
-                                      const x = (i * 50);
-                                      const y = 90 - (d.value * 0.8);
-                                      return (
-                                        <g key={i}>
-                                          <circle cx={x} cy={y} r="2" fill="#09090b" stroke="#10b981" strokeWidth="1.5" vectorEffect="non-scaling-stroke" />
-                                          <text x={x} y={y - 4} textAnchor="middle" fill="#e4e4e7" fontSize="6" fontWeight="600">{d.value.toFixed(1)}%</text>
-                                          <text x={x} y="102" textAnchor="middle" fill="#a1a1aa" fontSize="5">{d.label}</text>
-                                        </g>
-                                      );
-                                    })}
-                                  </g>
-                                );
-                              })()}
-                            </svg>
+                                ]}
+                                margin={{ top: 10, right: 10, left: -25, bottom: 0 }}
+                              >
+                                <defs>
+                                  <linearGradient id="cnn-color" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
+                                    <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                                  </linearGradient>
+                                </defs>
+                                <CartesianGrid strokeDasharray="3 3" stroke="#3f3f46" vertical={false} />
+                                <XAxis dataKey="label" stroke="#a1a1aa" fontSize={10} tickLine={false} axisLine={false} />
+                                <YAxis stroke="#a1a1aa" fontSize={10} tickLine={false} axisLine={false} tickFormatter={(val) => `${val}%`} />
+                                <Tooltip
+                                  contentStyle={{ backgroundColor: "#18181b", borderColor: "#27272a", borderRadius: "8px", fontSize: "12px", color: "#e4e4e7" }}
+                                  itemStyle={{ color: "#10b981" }}
+                                />
+                                <Area type="monotone" dataKey="value" stroke="#10b981" strokeWidth={2} fillOpacity={1} fill="url(#cnn-color)" />
+                              </AreaChart>
+                            </ResponsiveContainer>
                           </div>
                         </div>
 
-                        {/* Random Forest Probabilities - Line Graph */}
+                        {/* Random Forest Probabilities - Recharts */}
                         <div className="space-y-3">
                           <span className="text-xs text-zinc-400 font-mono">Random Forest (Repair Tier)</span>
-                          <div className="relative w-full h-48 bg-zinc-950/80 rounded-xl p-4 border border-zinc-800/80 overflow-hidden">
-                            <svg viewBox="-5 -5 110 110" preserveAspectRatio="none" className="w-full h-full overflow-visible">
-                              {/* Grid lines */}
-                              <line x1="0" y1="10" x2="100" y2="10" stroke="#3f3f46" strokeDasharray="2 2" strokeWidth="0.5" />
-                              <line x1="0" y1="50" x2="100" y2="50" stroke="#3f3f46" strokeDasharray="2 2" strokeWidth="0.5" />
-                              <line x1="0" y1="90" x2="100" y2="90" stroke="#3f3f46" strokeWidth="0.5" />
-
-                              {(() => {
-                                const data = [
+                          <div className="relative w-full h-48 bg-zinc-950/80 rounded-xl p-4 border border-zinc-800/80">
+                            <ResponsiveContainer width="100%" height="100%">
+                              <AreaChart
+                                data={[
                                   { label: "Low", value: assessment.member_outputs.member_4_random_forest.tier_probabilities.low },
                                   { label: "Medium", value: assessment.member_outputs.member_4_random_forest.tier_probabilities.medium },
                                   { label: "High", value: assessment.member_outputs.member_4_random_forest.tier_probabilities.high }
-                                ];
-                                const pts = data.map((d, i) => {
-                                  const x = (i * 50); // 0, 50, 100
-                                  const y = 90 - (d.value * 0.8);
-                                  return `${x},${y}`;
-                                }).join(" ");
-                                const pathD = `M ${pts.split(' ').join(' L ')}`;
-                                const areaD = `${pathD} L 100,90 L 0,90 Z`;
-                                return (
-                                  <g>
-                                    <defs>
-                                      <linearGradient id="rf-grad" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="0%" stopColor="#8b5cf6" stopOpacity="0.4" />
-                                        <stop offset="100%" stopColor="#8b5cf6" stopOpacity="0" />
-                                      </linearGradient>
-                                    </defs>
-                                    <path d={areaD} fill="url(#rf-grad)" />
-                                    <path d={pathD} fill="none" stroke="#8b5cf6" strokeWidth="1.5" vectorEffect="non-scaling-stroke" />
-                                    {data.map((d, i) => {
-                                      const x = (i * 50);
-                                      const y = 90 - (d.value * 0.8);
-                                      return (
-                                        <g key={i}>
-                                          <circle cx={x} cy={y} r="2" fill="#09090b" stroke="#8b5cf6" strokeWidth="1.5" vectorEffect="non-scaling-stroke" />
-                                          <text x={x} y={y - 4} textAnchor="middle" fill="#e4e4e7" fontSize="6" fontWeight="600">{d.value.toFixed(1)}%</text>
-                                          <text x={x} y="102" textAnchor="middle" fill="#a1a1aa" fontSize="5">{d.label}</text>
-                                        </g>
-                                      );
-                                    })}
-                                  </g>
-                                );
-                              })()}
-                            </svg>
+                                ]}
+                                margin={{ top: 10, right: 10, left: -25, bottom: 0 }}
+                              >
+                                <defs>
+                                  <linearGradient id="rf-color" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.3}/>
+                                    <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0}/>
+                                  </linearGradient>
+                                </defs>
+                                <CartesianGrid strokeDasharray="3 3" stroke="#3f3f46" vertical={false} />
+                                <XAxis dataKey="label" stroke="#a1a1aa" fontSize={10} tickLine={false} axisLine={false} />
+                                <YAxis stroke="#a1a1aa" fontSize={10} tickLine={false} axisLine={false} tickFormatter={(val) => `${val}%`} />
+                                <Tooltip
+                                  contentStyle={{ backgroundColor: "#18181b", borderColor: "#27272a", borderRadius: "8px", fontSize: "12px", color: "#e4e4e7" }}
+                                  itemStyle={{ color: "#8b5cf6" }}
+                                />
+                                <Area type="monotone" dataKey="value" stroke="#8b5cf6" strokeWidth={2} fillOpacity={1} fill="url(#rf-color)" />
+                              </AreaChart>
+                            </ResponsiveContainer>
                           </div>
                         </div>
                       </div>

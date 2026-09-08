@@ -1049,6 +1049,66 @@ export default function Home() {
                     </div>
                   )}
 
+                  {/* Model Confidence Distribution Graphs */}
+                  {assessment && (
+                    <div className="bg-zinc-900/60 border border-zinc-800 rounded-2xl p-5 sm:p-6 lg:p-7 shadow-sm space-y-5">
+                      <div className="flex items-center justify-between pb-3.5 border-b border-zinc-800/80">
+                        <div className="flex items-center gap-2.5">
+                          <Activity className="w-4 h-4 sm:w-5 sm:h-5 text-zinc-400" />
+                          <h3 className="text-xs sm:text-sm font-semibold uppercase tracking-wider text-zinc-200">
+                            Model Confidence Distribution
+                          </h3>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                        {/* CNN Probabilities */}
+                        <div className="space-y-3">
+                          <span className="text-xs text-zinc-400 font-mono">MobileNetV2 (Damage Severity)</span>
+                          <div className="space-y-2">
+                            {[
+                              { label: "Minor Damage", value: assessment.member_outputs.member_1_cnn.probabilities.minor, color: "bg-emerald-500" },
+                              { label: "Moderate Damage", value: assessment.member_outputs.member_1_cnn.probabilities.moderate, color: "bg-amber-500" },
+                              { label: "Severe Damage", value: assessment.member_outputs.member_1_cnn.probabilities.severe, color: "bg-rose-500" },
+                            ].map((item) => (
+                              <div key={item.label} className="w-full">
+                                <div className="flex justify-between text-[11px] mb-1">
+                                  <span className="text-zinc-300">{item.label}</span>
+                                  <span className="text-zinc-400 font-mono">{(item.value * 100).toFixed(1)}%</span>
+                                </div>
+                                <div className="w-full bg-zinc-950 rounded-full h-1.5 overflow-hidden">
+                                  <div className={`h-1.5 rounded-full ${item.color}`} style={{ width: `${(item.value * 100).toFixed(1)}%` }} />
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Random Forest Probabilities */}
+                        <div className="space-y-3">
+                          <span className="text-xs text-zinc-400 font-mono">Random Forest (Repair Tier)</span>
+                          <div className="space-y-2">
+                            {[
+                              { label: "Low Tier", value: assessment.member_outputs.member_4_random_forest.tier_probabilities.low, color: "bg-emerald-500" },
+                              { label: "Medium Tier", value: assessment.member_outputs.member_4_random_forest.tier_probabilities.medium, color: "bg-amber-500" },
+                              { label: "High Tier", value: assessment.member_outputs.member_4_random_forest.tier_probabilities.high, color: "bg-rose-500" },
+                            ].map((item) => (
+                              <div key={item.label} className="w-full">
+                                <div className="flex justify-between text-[11px] mb-1">
+                                  <span className="text-zinc-300">{item.label}</span>
+                                  <span className="text-zinc-400 font-mono">{(item.value * 100).toFixed(1)}%</span>
+                                </div>
+                                <div className="w-full bg-zinc-950 rounded-full h-1.5 overflow-hidden">
+                                  <div className={`h-1.5 rounded-full ${item.color}`} style={{ width: `${(item.value * 100).toFixed(1)}%` }} />
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Financial Settlement & Underwriting Action Card */}
                   {assessment && (
                     <div className="bg-zinc-900/60 border border-zinc-800 rounded-2xl p-5 sm:p-6 lg:p-7 shadow-sm space-y-5">

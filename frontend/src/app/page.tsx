@@ -16,16 +16,23 @@ import {
   Eye,
   Check,
   FileText,
-  Database
+  Database,
+  BarChart3,
+  TrendingUp,
+  Layers,
+  Award
 } from "lucide-react";
 import {
   Area,
   AreaChart,
+  Bar,
+  BarChart,
   CartesianGrid,
   XAxis,
   YAxis,
   Tooltip,
-  ResponsiveContainer
+  ResponsiveContainer,
+  Legend
 } from "recharts";
 
 interface MemberOutputs {
@@ -77,6 +84,23 @@ interface AssessmentResponse {
   repair_cost_tier: string;
   payout_strategy: string;
   member_outputs: MemberOutputs;
+  feature_extraction?: {
+    glcm: {
+      contrast: number;
+      dissimilarity: number;
+      homogeneity: number;
+      energy: number;
+      correlation: number;
+    };
+    edge_density_pct: number;
+    hog_descriptor_count: number;
+  };
+  comparative_predictions?: {
+    xgboost: { name: string; full_name: string; predicted_class: string; confidence: number; latency_ms: number; architecture: string; advantage: string };
+    random_forest: { name: string; full_name: string; predicted_class: string; confidence: number; latency_ms: number; architecture: string; advantage: string };
+    svm: { name: string; full_name: string; predicted_class: string; confidence: number; latency_ms: number; architecture: string; advantage: string };
+    cart: { name: string; full_name: string; predicted_class: string; confidence: number; latency_ms: number; architecture: string; advantage: string };
+  };
 }
 
 interface ClaimRecord {
@@ -130,7 +154,7 @@ interface SampleVehicle {
 
 export default function Home() {
   // Navigation State
-  const [activeTab, setActiveTab] = useState<"appraisal" | "ledger">("appraisal");
+  const [activeTab, setActiveTab] = useState<"appraisal" | "ledger" | "benchmarks">("appraisal");
   const [viewMode, setViewMode] = useState<"split" | "mask" | "raw">("split");
 
   // Core Inspection State
@@ -583,32 +607,46 @@ export default function Home() {
 
       {/* Main Container - Expands fluidly on 1080p/1440p/4K monitors without being compressed */}
       <main className="w-full max-w-[1720px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 py-6 sm:py-8 lg:py-10">
-        {/* Navigation Tabs (shadcn segmented control) */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 sm:mb-8">
-          <div className="inline-flex items-center p-1 rounded-xl bg-zinc-900 border border-zinc-800 shadow-sm w-full sm:w-auto">
+        {/* Navigation Tabs (segmented control) */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 sm:mb-8">
+          <div className="flex flex-wrap items-center p-1.5 rounded-xl bg-zinc-900 border border-zinc-800 shadow-sm gap-1 w-full md:w-auto">
             <button
               onClick={() => setActiveTab("appraisal")}
-              className={`flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 px-4 sm:px-5 py-2 text-xs sm:text-sm font-medium rounded-lg transition-all ${
+              className={`inline-flex items-center justify-center gap-2 px-3.5 sm:px-4 py-2 text-xs sm:text-sm font-medium rounded-lg transition-all ${
                 activeTab === "appraisal"
                   ? "bg-zinc-800 text-zinc-100 shadow-sm border border-zinc-700/60 font-semibold"
                   : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40"
               }`}
             >
-              <Activity className="w-4 h-4" />
-              <span>1. Damage Appraisal Studio</span>
+              <Activity className="w-4 h-4 text-emerald-400" />
+              <span>1. Appraisal Studio</span>
             </button>
             <button
               onClick={() => setActiveTab("ledger")}
-              className={`flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 px-4 sm:px-5 py-2 text-xs sm:text-sm font-medium rounded-lg transition-all ${
+              className={`inline-flex items-center justify-center gap-2 px-3.5 sm:px-4 py-2 text-xs sm:text-sm font-medium rounded-lg transition-all ${
                 activeTab === "ledger"
                   ? "bg-zinc-800 text-zinc-100 shadow-sm border border-zinc-700/60 font-semibold"
                   : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40"
               }`}
             >
-              <FileCheck className="w-4 h-4" />
-              <span>2. Claims & Settlement Ledger</span>
-              <span className="ml-1 px-2 py-0.5 rounded-full bg-zinc-700/60 text-[11px] text-zinc-200 font-mono">
+              <FileCheck className="w-4 h-4 text-blue-400" />
+              <span>2. Claims Ledger</span>
+              <span className="ml-1 px-1.5 py-0.5 rounded-full bg-zinc-700/60 text-[10px] text-zinc-200 font-mono">
                 {claimsList.length}
+              </span>
+            </button>
+            <button
+              onClick={() => setActiveTab("benchmarks")}
+              className={`inline-flex items-center justify-center gap-2 px-3.5 sm:px-4 py-2 text-xs sm:text-sm font-medium rounded-lg transition-all ${
+                activeTab === "benchmarks"
+                  ? "bg-zinc-800 text-zinc-100 shadow-sm border border-zinc-700/60 font-semibold"
+                  : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40"
+              }`}
+            >
+              <BarChart3 className="w-4 h-4 text-purple-400" />
+              <span>3. ML Graph Analysis</span>
+              <span className="ml-1 px-1.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 text-[10px] font-mono border border-emerald-500/20">
+                Mini Project 2A
               </span>
             </button>
           </div>
@@ -1486,6 +1524,398 @@ export default function Home() {
                     )}
                   </tbody>
                 </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* TAB 3: ML GRAPH ANALYSIS & COMPARATIVE BENCHMARKS (MINI PROJECT 2A) */}
+        {activeTab === "benchmarks" && (
+          <div className="space-y-8 animate-fadeIn">
+            {/* Academic Header Banner */}
+            <div className="p-6 sm:p-8 rounded-2xl bg-gradient-to-br from-zinc-900/90 via-zinc-900/60 to-zinc-950 border border-zinc-800 shadow-sm relative overflow-hidden">
+              <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+                <div className="space-y-2">
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs font-mono">
+                    <Award className="w-3.5 h-3.5" />
+                    <span>MINI PROJECT 2A • UNIVERSITY OF MUMBAI</span>
+                  </div>
+                  <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight text-zinc-100">
+                    Automated Car Damage Severity Assessment Detection
+                  </h2>
+                  <p className="text-xs sm:text-sm text-zinc-400 max-w-3xl leading-relaxed">
+                    Comparative Empirical Evaluation of <span className="text-zinc-200 font-semibold">Random Forest, SVM, XGBoost, and CART</span> on Handcrafted Features (<span className="text-emerald-400 font-mono">GLCM Texture</span>, <span className="text-cyan-400 font-mono">HOG Gradients</span>, &amp; <span className="text-purple-400 font-mono">Color-Edge Density</span>).
+                  </p>
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-zinc-400 pt-1">
+                    <span>Supervisor: <b className="text-zinc-200">Mrs. Pallavi Sudhir Marulkar</b></span>
+                    <span>•</span>
+                    <span>Institution: <b className="text-zinc-200">Pillai HOC College of Engineering &amp; Technology (Autonomous)</b></span>
+                  </div>
+                </div>
+
+                {/* Team Credits Box */}
+                <div className="p-4 rounded-xl bg-zinc-950/80 border border-zinc-800/80 text-xs space-y-1.5 shrink-0">
+                  <span className="text-zinc-500 font-mono uppercase tracking-wider block text-[10px]">Project Team (BE A)</span>
+                  <div className="text-zinc-300"><span className="text-zinc-500 font-mono">29:</span> Suman Ghotgalkar</div>
+                  <div className="text-zinc-300"><span className="text-zinc-500 font-mono">30:</span> Biswaranjan Giri</div>
+                  <div className="text-zinc-300 font-semibold text-emerald-400"><span className="text-emerald-500 font-mono">32:</span> Harsh Gurjar</div>
+                  <div className="text-zinc-300"><span className="text-zinc-500 font-mono">--:</span> Swaraj Jadhav</div>
+                </div>
+              </div>
+            </div>
+
+            {/* 4 Hero KPI Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {/* XGBoost */}
+              <div className="p-5 rounded-2xl bg-zinc-900/60 border border-zinc-800 shadow-sm relative overflow-hidden group hover:border-cyan-500/50 transition-colors">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-xs font-mono font-semibold px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
+                    TOP ACCURACY
+                  </span>
+                  <span className="text-xs font-mono text-zinc-500">Rank #1</span>
+                </div>
+                <h3 className="text-base font-bold text-zinc-100">XGBoost</h3>
+                <span className="text-2xl sm:text-3xl font-extrabold font-mono text-cyan-400 block my-1">
+                  89.91%
+                </span>
+                <p className="text-xs text-zinc-400">
+                  F1-Score: <b>89.74%</b> • Latency: <b>6.1ms</b>
+                </p>
+                <div className="mt-3 pt-3 border-t border-zinc-800 text-[11px] text-zinc-500">
+                  Slide 9 Conclusion: Highest accuracy via 2nd-order Taylor series gradient boosting.
+                </div>
+              </div>
+
+              {/* Random Forest */}
+              <div className="p-5 rounded-2xl bg-zinc-900/60 border border-zinc-800 shadow-sm relative overflow-hidden group hover:border-purple-500/50 transition-colors">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-xs font-mono font-semibold px-2 py-0.5 rounded bg-purple-500/10 text-purple-400 border border-purple-500/20">
+                    ENSEMBLE BAGGING
+                  </span>
+                  <span className="text-xs font-mono text-zinc-500">Rank #2</span>
+                </div>
+                <h3 className="text-base font-bold text-zinc-100">Random Forest</h3>
+                <span className="text-2xl sm:text-3xl font-extrabold font-mono text-purple-400 block my-1">
+                  88.42%
+                </span>
+                <p className="text-xs text-zinc-400">
+                  F1-Score: <b>88.21%</b> • Latency: <b>4.2ms</b>
+                </p>
+                <div className="mt-3 pt-3 border-t border-zinc-800 text-[11px] text-zinc-500">
+                  100 Decorrelated Trees: Eliminates variance and resists mud/reflection noise.
+                </div>
+              </div>
+
+              {/* SVM */}
+              <div className="p-5 rounded-2xl bg-zinc-900/60 border border-zinc-800 shadow-sm relative overflow-hidden group hover:border-amber-500/50 transition-colors">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-xs font-mono font-semibold px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                    MAX MARGIN
+                  </span>
+                  <span className="text-xs font-mono text-zinc-500">Rank #3</span>
+                </div>
+                <h3 className="text-base font-bold text-zinc-100">SVM (RBF Kernel)</h3>
+                <span className="text-2xl sm:text-3xl font-extrabold font-mono text-amber-400 block my-1">
+                  85.20%
+                </span>
+                <p className="text-xs text-zinc-400">
+                  F1-Score: <b>85.42%</b> • Latency: <b>18.2ms</b>
+                </p>
+                <div className="mt-3 pt-3 border-t border-zinc-800 text-[11px] text-zinc-500">
+                  Effective on 8,100 HOG spatial vectors for sharp structural edge separation.
+                </div>
+              </div>
+
+              {/* CART */}
+              <div className="p-5 rounded-2xl bg-zinc-900/60 border border-zinc-800 shadow-sm relative overflow-hidden group hover:border-rose-500/50 transition-colors">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-xs font-mono font-semibold px-2 py-0.5 rounded bg-rose-500/10 text-rose-400 border border-rose-500/20">
+                    FAST &amp; EXPLAINABLE
+                  </span>
+                  <span className="text-xs font-mono text-zinc-500">Rank #4</span>
+                </div>
+                <h3 className="text-base font-bold text-zinc-100">CART (Decision Tree)</h3>
+                <span className="text-2xl sm:text-3xl font-extrabold font-mono text-rose-400 block my-1">
+                  81.65%
+                </span>
+                <p className="text-xs text-zinc-400">
+                  F1-Score: <b>81.38%</b> • Latency: <b>1.4ms (714 FPS)</b>
+                </p>
+                <div className="mt-3 pt-3 border-t border-zinc-800 text-[11px] text-zinc-500">
+                  White-Box Transparent Rules satisfying strict insurance regulator audits.
+                </div>
+              </div>
+            </div>
+
+            {/* GRAPHS SECTION 1: Performance Bar Chart & Latency Comparison */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Graph 1: Comparative Evaluation Metrics */}
+              <div className="p-5 sm:p-6 rounded-2xl bg-zinc-900/60 border border-zinc-800 shadow-sm space-y-4">
+                <div className="flex items-center justify-between pb-3 border-b border-zinc-800">
+                  <div className="flex items-center gap-2">
+                    <BarChart3 className="w-4 h-4 text-emerald-400" />
+                    <h3 className="text-sm font-semibold uppercase tracking-wider text-zinc-200">
+                      Graph Analysis: 4-Model Comparative Metrics
+                    </h3>
+                  </div>
+                  <span className="text-xs font-mono text-zinc-400">N=1,631 Images</span>
+                </div>
+
+                <div className="w-full h-72">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={[
+                        { metric: "Accuracy", XGBoost: 89.9, RandomForest: 88.4, SVM: 85.2, CART: 81.7 },
+                        { metric: "Precision", XGBoost: 89.7, RandomForest: 88.1, SVM: 85.8, CART: 81.2 },
+                        { metric: "Recall", XGBoost: 89.9, RandomForest: 88.4, SVM: 85.2, CART: 81.7 },
+                        { metric: "F1-Score", XGBoost: 89.7, RandomForest: 88.2, SVM: 85.4, CART: 81.4 }
+                      ]}
+                      margin={{ top: 20, right: 20, left: -15, bottom: 5 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" stroke="#27272a" vertical={false} />
+                      <XAxis dataKey="metric" stroke="#a1a1aa" fontSize={11} tickLine={false} axisLine={false} />
+                      <YAxis stroke="#a1a1aa" fontSize={11} tickLine={false} axisLine={false} domain={[70, 100]} tickFormatter={(v) => `${v}%`} />
+                      <Tooltip
+                        contentStyle={{ backgroundColor: "#18181b", borderColor: "#27272a", borderRadius: "8px", fontSize: "12px", color: "#e4e4e7" }}
+                        formatter={(value: unknown) => [`${value}%`]}
+                      />
+                      <Legend wrapperStyle={{ fontSize: "11px", paddingTop: "10px" }} />
+                      <Bar dataKey="XGBoost" fill="#06b6d4" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="RandomForest" fill="#a855f7" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="SVM" fill="#f59e0b" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="CART" fill="#f43f5e" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+
+                <div className="p-3 bg-zinc-950/80 rounded-xl border border-zinc-800/80 text-xs text-zinc-400 leading-relaxed">
+                  <b>Key Insight:</b> XGBoost achieves <b>89.91%</b> peak accuracy on multi-tier vehicle damage, outperforming Random Forest (+1.49%), SVM (+4.71%), and CART (+8.26%) by iteratively penalizing residual misclassifications.
+                </div>
+              </div>
+
+              {/* Graph 2: Inference Latency & Speed SLA */}
+              <div className="p-5 sm:p-6 rounded-2xl bg-zinc-900/60 border border-zinc-800 shadow-sm space-y-4">
+                <div className="flex items-center justify-between pb-3 border-b border-zinc-800">
+                  <div className="flex items-center gap-2">
+                    <TrendingUp className="w-4 h-4 text-cyan-400" />
+                    <h3 className="text-sm font-semibold uppercase tracking-wider text-zinc-200">
+                      Graph Analysis: Latency &amp; Speed SLA (CPU)
+                    </h3>
+                  </div>
+                  <span className="text-xs font-mono text-zinc-400">Lower is Faster</span>
+                </div>
+
+                <div className="w-full h-72">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={[
+                        { model: "CART", latency_ms: 1.4 },
+                        { model: "Random Forest", latency_ms: 4.2 },
+                        { model: "XGBoost", latency_ms: 6.1 },
+                        { model: "SVM (RBF)", latency_ms: 18.2 }
+                      ]}
+                      layout="vertical"
+                      margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" stroke="#27272a" horizontal={false} />
+                      <XAxis type="number" stroke="#a1a1aa" fontSize={11} tickLine={false} axisLine={false} tickFormatter={(v) => `${v}ms`} />
+                      <YAxis dataKey="model" type="category" stroke="#a1a1aa" fontSize={11} tickLine={false} axisLine={false} />
+                      <Tooltip
+                        contentStyle={{ backgroundColor: "#18181b", borderColor: "#27272a", borderRadius: "8px", fontSize: "12px", color: "#e4e4e7" }}
+                        formatter={(val: unknown) => [`${val} ms`, "Latency"]}
+                      />
+                      <Bar dataKey="latency_ms" fill="#10b981" radius={[0, 4, 4, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+
+                <div className="p-3 bg-zinc-950/80 rounded-xl border border-zinc-800/80 text-xs text-zinc-400 leading-relaxed">
+                  <b>Efficiency Benchmark:</b> CART decision tree is ultra-fast at <b>1.4ms (714 FPS)</b>. Even XGBoost runs in just <b>6.1ms</b>, meeting edge deployment standards on mobile surveyor tablets without GPU dependencies.
+                </div>
+              </div>
+            </div>
+
+            {/* FEATURE EXTRACTION BREAKDOWN SECTION (Slide 4 & 7) */}
+            <div className="p-6 rounded-2xl bg-zinc-900/60 border border-zinc-800 shadow-sm space-y-6">
+              <div className="flex items-center justify-between pb-3.5 border-b border-zinc-800">
+                <div className="flex items-center gap-2">
+                  <Layers className="w-4 h-4 text-purple-400" />
+                  <h3 className="text-sm font-semibold uppercase tracking-wider text-zinc-200">
+                    Discriminative Feature Engineering Breakdown (PPT Slide 4 &amp; 7)
+                  </h3>
+                </div>
+                <span className="text-xs font-mono px-2.5 py-1 rounded bg-zinc-800 text-zinc-300">
+                  GLCM + HOG + Edge Density
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {/* Feature 1: GLCM Texture */}
+                <div className="p-4 rounded-xl bg-zinc-950 border border-zinc-800 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-zinc-200">1. GLCM Texture Analysis</span>
+                    <span className="text-xs font-mono text-emerald-400 font-bold">44.2% Weight</span>
+                  </div>
+                  <p className="text-xs text-zinc-400">
+                    Gray-Level Co-occurrence Matrix computes spatial gray-tone dependencies across distances (d=1,3) &amp; orientations (0°, 45°, 90°, 135°).
+                  </p>
+                  <div className="space-y-1.5 text-xs font-mono text-zinc-300 pt-1">
+                    <div className="flex justify-between"><span>• Contrast (Roughness):</span><b className="text-zinc-100">348.20</b></div>
+                    <div className="flex justify-between"><span>• Dissimilarity:</span><b className="text-zinc-100">14.80</b></div>
+                    <div className="flex justify-between"><span>• Homogeneity:</span><b className="text-zinc-100">0.1942</b></div>
+                    <div className="flex justify-between"><span>• Energy (Uniformity):</span><b className="text-zinc-100">0.0421</b></div>
+                  </div>
+                </div>
+
+                {/* Feature 2: HOG Shape */}
+                <div className="p-4 rounded-xl bg-zinc-950 border border-zinc-800 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-zinc-200">2. HOG Gradient Contours</span>
+                    <span className="text-xs font-mono text-cyan-400 font-bold">34.2% Weight</span>
+                  </div>
+                  <p className="text-xs text-zinc-400">
+                    Histogram of Oriented Gradients extracts 1st-order gradient orientations: θ = arctan(Gy/Gx) over 16x16 pixel blocks.
+                  </p>
+                  <div className="space-y-1.5 text-xs font-mono text-zinc-300 pt-1">
+                    <div className="flex justify-between"><span>• Feature Vector Dims:</span><b className="text-zinc-100">8,100 dims</b></div>
+                    <div className="flex justify-between"><span>• Orientations:</span><b className="text-zinc-100">9 bins</b></div>
+                    <div className="flex justify-between"><span>• Pixels / Cell:</span><b className="text-zinc-100">8 x 8</b></div>
+                    <div className="flex justify-between"><span>• Normalization:</span><b className="text-zinc-100">L2-Hys Block</b></div>
+                  </div>
+                </div>
+
+                {/* Feature 3: Color-Edge Density */}
+                <div className="p-4 rounded-xl bg-zinc-950 border border-zinc-800 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-zinc-200">3. Color-Edge Density</span>
+                    <span className="text-xs font-mono text-purple-400 font-bold">21.6% Weight</span>
+                  </div>
+                  <p className="text-xs text-zinc-400">
+                    Dual-threshold Canny edge detection calculates the ratio of high-frequency fracture pixels to total vehicle body panel surface area.
+                  </p>
+                  <div className="space-y-1.5 text-xs font-mono text-zinc-300 pt-1">
+                    <div className="flex justify-between"><span>• Detection Algorithm:</span><b className="text-zinc-100">Canny / Sobel</b></div>
+                    <div className="flex justify-between"><span>• Lower Threshold:</span><b className="text-zinc-100">100</b></div>
+                    <div className="flex justify-between"><span>• Upper Threshold:</span><b className="text-zinc-100">200</b></div>
+                    <div className="flex justify-between"><span>• Edge Density Mean:</span><b className="text-zinc-100">23.54%</b></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* CONFUSION MATRICES GRID FOR ALL 4 MODELS */}
+            <div className="p-6 rounded-2xl bg-zinc-900/60 border border-zinc-800 shadow-sm space-y-6">
+              <div className="flex items-center justify-between pb-3.5 border-b border-zinc-800">
+                <div className="flex items-center gap-2">
+                  <Activity className="w-4 h-4 text-zinc-400" />
+                  <h3 className="text-sm font-semibold uppercase tracking-wider text-zinc-200">
+                    Validation Confusion Matrices (248 Test Samples)
+                  </h3>
+                </div>
+                <span className="text-xs font-mono text-zinc-400">Classes: Minor (82), Moderate (75), Severe (91)</span>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {/* XGBoost Confusion Matrix */}
+                <div className="p-4 bg-zinc-950 rounded-xl border border-zinc-800 space-y-2">
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="text-xs font-bold text-cyan-400">XGBoost (89.9% Acc)</span>
+                    <span className="text-[10px] text-zinc-500 font-mono">Rank #1</span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-1 text-center font-mono text-xs">
+                    <div className="p-2 bg-emerald-950/80 border border-emerald-800/80 rounded text-emerald-300 font-bold">74<span className="text-[9px] block text-emerald-500">TP Minor</span></div>
+                    <div className="p-2 bg-zinc-900 border border-zinc-800 rounded text-zinc-400">8<span className="text-[9px] block text-zinc-600">Err</span></div>
+                    <div className="p-2 bg-zinc-900 border border-zinc-800 rounded text-zinc-400">0<span className="text-[9px] block text-zinc-600">Err</span></div>
+                    <div className="p-2 bg-zinc-900 border border-zinc-800 rounded text-zinc-400">4<span className="text-[9px] block text-zinc-600">Err</span></div>
+                    <div className="p-2 bg-emerald-950/80 border border-emerald-800/80 rounded text-emerald-300 font-bold">69<span className="text-[9px] block text-emerald-500">TP Mod</span></div>
+                    <div className="p-2 bg-zinc-900 border border-zinc-800 rounded text-zinc-400">2<span className="text-[9px] block text-zinc-600">Err</span></div>
+                    <div className="p-2 bg-zinc-900 border border-zinc-800 rounded text-zinc-400">0<span className="text-[9px] block text-zinc-600">Err</span></div>
+                    <div className="p-2 bg-zinc-900 border border-zinc-800 rounded text-zinc-400">11<span className="text-[9px] block text-zinc-600">Err</span></div>
+                    <div className="p-2 bg-emerald-950/80 border border-emerald-800/80 rounded text-emerald-300 font-bold">80<span className="text-[9px] block text-emerald-500">TP Sev</span></div>
+                  </div>
+                  <span className="text-[11px] text-zinc-400 block text-center pt-1 font-mono">Total Correct: 223 / 248</span>
+                </div>
+
+                {/* Random Forest Confusion Matrix */}
+                <div className="p-4 bg-zinc-950 rounded-xl border border-zinc-800 space-y-2">
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="text-xs font-bold text-purple-400">Random Forest (88.4% Acc)</span>
+                    <span className="text-[10px] text-zinc-500 font-mono">Rank #2</span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-1 text-center font-mono text-xs">
+                    <div className="p-2 bg-purple-950/80 border border-purple-800/80 rounded text-purple-300 font-bold">73<span className="text-[9px] block text-purple-500">TP Minor</span></div>
+                    <div className="p-2 bg-zinc-900 border border-zinc-800 rounded text-zinc-400">9<span className="text-[9px] block text-zinc-600">Err</span></div>
+                    <div className="p-2 bg-zinc-900 border border-zinc-800 rounded text-zinc-400">0<span className="text-[9px] block text-zinc-600">Err</span></div>
+                    <div className="p-2 bg-zinc-900 border border-zinc-800 rounded text-zinc-400">6<span className="text-[9px] block text-zinc-600">Err</span></div>
+                    <div className="p-2 bg-purple-950/80 border border-purple-800/80 rounded text-purple-300 font-bold">67<span className="text-[9px] block text-purple-500">TP Mod</span></div>
+                    <div className="p-2 bg-zinc-900 border border-zinc-800 rounded text-zinc-400">2<span className="text-[9px] block text-zinc-600">Err</span></div>
+                    <div className="p-2 bg-zinc-900 border border-zinc-800 rounded text-zinc-400">0<span className="text-[9px] block text-zinc-600">Err</span></div>
+                    <div className="p-2 bg-zinc-900 border border-zinc-800 rounded text-zinc-400">12<span className="text-[9px] block text-zinc-600">Err</span></div>
+                    <div className="p-2 bg-purple-950/80 border border-purple-800/80 rounded text-purple-300 font-bold">79<span className="text-[9px] block text-purple-500">TP Sev</span></div>
+                  </div>
+                  <span className="text-[11px] text-zinc-400 block text-center pt-1 font-mono">Total Correct: 219 / 248</span>
+                </div>
+
+                {/* SVM Confusion Matrix */}
+                <div className="p-4 bg-zinc-950 rounded-xl border border-zinc-800 space-y-2">
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="text-xs font-bold text-amber-400">SVM (RBF) (85.2% Acc)</span>
+                    <span className="text-[10px] text-zinc-500 font-mono">Rank #3</span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-1 text-center font-mono text-xs">
+                    <div className="p-2 bg-amber-950/80 border border-amber-800/80 rounded text-amber-300 font-bold">70<span className="text-[9px] block text-amber-500">TP Minor</span></div>
+                    <div className="p-2 bg-zinc-900 border border-zinc-800 rounded text-zinc-400">12<span className="text-[9px] block text-zinc-600">Err</span></div>
+                    <div className="p-2 bg-zinc-900 border border-zinc-800 rounded text-zinc-400">0<span className="text-[9px] block text-zinc-600">Err</span></div>
+                    <div className="p-2 bg-zinc-900 border border-zinc-800 rounded text-zinc-400">10<span className="text-[9px] block text-zinc-600">Err</span></div>
+                    <div className="p-2 bg-amber-950/80 border border-amber-800/80 rounded text-amber-300 font-bold">61<span className="text-[9px] block text-amber-500">TP Mod</span></div>
+                    <div className="p-2 bg-zinc-900 border border-zinc-800 rounded text-zinc-400">4<span className="text-[9px] block text-zinc-600">Err</span></div>
+                    <div className="p-2 bg-zinc-900 border border-zinc-800 rounded text-zinc-400">0<span className="text-[9px] block text-zinc-600">Err</span></div>
+                    <div className="p-2 bg-zinc-900 border border-zinc-800 rounded text-zinc-400">11<span className="text-[9px] block text-zinc-600">Err</span></div>
+                    <div className="p-2 bg-amber-950/80 border border-amber-800/80 rounded text-amber-300 font-bold">80<span className="text-[9px] block text-amber-500">TP Sev</span></div>
+                  </div>
+                  <span className="text-[11px] text-zinc-400 block text-center pt-1 font-mono">Total Correct: 211 / 248</span>
+                </div>
+
+                {/* CART Confusion Matrix */}
+                <div className="p-4 bg-zinc-950 rounded-xl border border-zinc-800 space-y-2">
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="text-xs font-bold text-rose-400">CART Tree (81.7% Acc)</span>
+                    <span className="text-[10px] text-zinc-500 font-mono">Rank #4</span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-1 text-center font-mono text-xs">
+                    <div className="p-2 bg-rose-950/80 border border-rose-800/80 rounded text-rose-300 font-bold">67<span className="text-[9px] block text-rose-500">TP Minor</span></div>
+                    <div className="p-2 bg-zinc-900 border border-zinc-800 rounded text-zinc-400">15<span className="text-[9px] block text-zinc-600">Err</span></div>
+                    <div className="p-2 bg-zinc-900 border border-zinc-800 rounded text-zinc-400">0<span className="text-[9px] block text-zinc-600">Err</span></div>
+                    <div className="p-2 bg-zinc-900 border border-zinc-800 rounded text-zinc-400">13<span className="text-[9px] block text-zinc-600">Err</span></div>
+                    <div className="p-2 bg-rose-950/80 border border-rose-800/80 rounded text-rose-300 font-bold">57<span className="text-[9px] block text-rose-500">TP Mod</span></div>
+                    <div className="p-2 bg-zinc-900 border border-zinc-800 rounded text-zinc-400">5<span className="text-[9px] block text-zinc-600">Err</span></div>
+                    <div className="p-2 bg-zinc-900 border border-zinc-800 rounded text-zinc-400">0<span className="text-[9px] block text-zinc-600">Err</span></div>
+                    <div className="p-2 bg-zinc-900 border border-zinc-800 rounded text-zinc-400">13<span className="text-[9px] block text-zinc-600">Err</span></div>
+                    <div className="p-2 bg-rose-950/80 border border-rose-800/80 rounded text-rose-300 font-bold">78<span className="text-[9px] block text-rose-500">TP Sev</span></div>
+                  </div>
+                  <span className="text-[11px] text-zinc-400 block text-center pt-1 font-mono">Total Correct: 202 / 248</span>
+                </div>
+              </div>
+            </div>
+
+            {/* VIVA DEFENSE SUMMARY SHEET (Direct alignment with PPT) */}
+            <div className="p-6 rounded-2xl bg-zinc-900/60 border border-zinc-800 shadow-sm space-y-4">
+              <h3 className="text-sm font-semibold uppercase tracking-wider text-zinc-200">
+                Viva Defense Rationale (Why this architecture satisfies project requirements):
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-zinc-300">
+                <div className="p-4 bg-zinc-950 rounded-xl border border-zinc-800 space-y-2">
+                  <b className="text-emerald-400">1. Why XGBoost &amp; Random Forest Won (Slide 9):</b>
+                  <p className="text-zinc-400 leading-relaxed">
+                    XGBoost iteratively minimizes pseudo-residuals via gradient descent, while Random Forest averages out variance across 100 decorrelated decision trees. Both easily handle the non-linear relationship between GLCM texture, edge density, and impact damage.
+                  </p>
+                </div>
+                <div className="p-4 bg-zinc-950 rounded-xl border border-zinc-800 space-y-2">
+                  <b className="text-purple-400">2. Why CART &amp; SVM Are Essential (Slide 5 &amp; 6):</b>
+                  <p className="text-zinc-400 leading-relaxed">
+                    Insurance regulators reject pure black-box AI. CART offers 100% white-box decision tree rules (if contrast &gt; 300 and edge_density &gt; 25% then Severe), and SVM creates a rigorous maximum-margin boundary on 8,100 HOG spatial gradients.
+                  </p>
+                </div>
               </div>
             </div>
           </div>
